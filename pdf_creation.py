@@ -1,25 +1,26 @@
 from datetime import date
+import os
 
 from PyQt6.QtWidgets import QMessageBox
 from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, Spacer, Paragraph
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
 from reportlab.pdfgen import canvas
-import pandas as pd
+from pandas import concat, DataFrame
 
 from error_msg import error_msg
 
 
-def page_setup(canvas, doc):
-    title = "Report"
+def page_setup(canvas,doc):
     pageinfo = "This document is strictly private and confidential"
     h, w = A4
     canvas.saveState()
-    canvas.setFont('Times-Roman', 24)
-    canvas.drawCentredString(w / 2.0, h - 50 * mm, title)
+    # below were used for creating a centered title, but using paragraph flowable in pdf function to get dynamic title
+    #canvas.setFont('Times-Roman', 24)
+    #canvas.drawCentredString(w / 2.0, h - 50 * mm)
     canvas.setFont('Times-Roman', 9)
 
     canvas.drawCentredString(w / 2, 16 * mm, "%s" % pageinfo)
@@ -49,8 +50,8 @@ def dataframe_formating(csv_to_table, step):
     summed = filtered[sum_cols].sum(axis=0)
     avgd = filtered[avg_cols].mean(axis=0)
 
-    concat = pd.concat([summed, avgd], axis="columns")
-    filled = concat[0].fillna(concat[1])
+    concatted = concat([summed, avgd], axis="columns")
+    filled = concatted[0].fillna(concatted[1])
 
     transposed = filled.reset_index()
     transposed.columns = ['Header', 'Values']
@@ -95,10 +96,13 @@ def table_creation(csv_to_table):  # creates stylised tables
                                                      ('VALIGN', (0, 0), (7, 0), 'MIDDLE'),
                                                      ('ALIGN', (0, 0), (7, 0), 'CENTER'),
                                                      ('ALIGN', (0, 0), (7, 0), 'CENTER'),
-                                                     ('BACKGROUND', (0, 0), (-1, 0), colors.rgb2cmyk(0, 119 / 255, 181 / 255)),
-                                                     ('BACKGROUND', (0, 0), (0, -1), colors.rgb2cmyk(0, 119 / 255, 181 / 255)),
+                                                     ('BACKGROUND', (0, 0), (-1, 0),
+                                                      colors.rgb2cmyk(0, 119 / 255, 181 / 255)),
+                                                     ('BACKGROUND', (0, 0), (0, -1),
+                                                      colors.rgb2cmyk(0, 119 / 255, 181 / 255)),
                                                      ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                                                     ('TEXTCOLOR', (0, 0), (0, -1), colors.white)], cornerRadii=[8, 8, 8, 8])
+                                                     ('TEXTCOLOR', (0, 0), (0, -1), colors.white)],
+                  cornerRadii=[8, 8, 8, 8])
 
     return table
 
@@ -111,16 +115,22 @@ def generation_message(save_location):  # message box to tell user the pdf has b
 
 
 def pdf(filtered_csv, save_location):
+    styles = ParagraphStyle(name='title')
+    styles.fontSize = 24
+    styles.fontName = 'Times-Roman'
+    styles.alignment = TA_CENTER
+
     h, w = A4
-    elements = [Spacer(w, 40 * mm)]
-    final_dataframe = pd.DataFrame()
+    head, tail = (os.path.split(save_location))
+    elements = [Spacer(w, 20 * mm), Paragraph(tail, styles), Spacer(w, 40 * mm)]
+    final_dataframe = DataFrame()
     for i in range(1, 4):
         formatted_df = dataframe_formating(filtered_csv, i)
         if i == 1:
             final_dataframe = formatted_df
         else:
-            no_header_df = pd.DataFrame(formatted_df.values, columns=final_dataframe.columns)
-            final_dataframe = pd.concat([final_dataframe, no_header_df], ignore_index=True)
+            no_header_df = DataFrame(formatted_df.values, columns=final_dataframe.columns)
+            final_dataframe = concat([final_dataframe, no_header_df], ignore_index=True)
     elements.append(table_creation(final_dataframe))
 
     doc = SimpleDocTemplate(save_location + '.pdf', pagesize=landscape(A4))

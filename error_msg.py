@@ -1,4 +1,4 @@
-import sys
+from sys import exception
 
 from PyQt6.QtWidgets import QErrorMessage
 
@@ -13,4 +13,4 @@ def error_msg(error):
     error_dialog.exec()
 
     # runs an exception
-    sys.exception()
+    exception()

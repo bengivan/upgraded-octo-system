@@ -1,8 +1,8 @@
-import pandas as p
+from pandas import read_csv
 
 
 def csv_load(filepath):
-    csv = p.read_csv(filepath)
+    csv = read_csv(filepath)
     return csv
 
 

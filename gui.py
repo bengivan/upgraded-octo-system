@@ -1,5 +1,6 @@
 import os
-import sys
+
+from sys import exit
 from functools import partial
 
 from PyQt6.QtWidgets import QApplication, QWidget, QGridLayout, QLineEdit, QComboBox, QPushButton, QFileDialog
@@ -34,6 +35,7 @@ class FileExplorer:
             if dialog.exec():
                 filename = dialog.selectedFiles()
                 if filename:
+                    # TODO check if the loaded file is actually a csv
                     # Load CSV and update the UI
                     self.csv_file_browser.setText(filename[0])
 
@@ -149,7 +151,7 @@ class CsvToPdfApp(QWidget):
                 save_location = os.path.join(self.save_file_browser.text(), self.file_name.text())
                 filtered_csv = filter_csv(csv_load(self.csv_file_browser.text()), self.campaign_dropdown.currentText())
 
-                pdf(filtered_csv, save_location)
+                pdf(filtered_csv=filtered_csv, save_location=save_location)
             else:
                 error_msg('Missing Inputs')
 
@@ -181,4 +183,4 @@ if __name__ == '__main__':
     app.setStyle('Fusion')
     window = CsvToPdfApp()
     window.show()
-    sys.exit(app.exec())
+    exit(app.exec())
